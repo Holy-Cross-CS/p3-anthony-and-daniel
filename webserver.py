@@ -898,7 +898,6 @@ def handle_http_post_message(req, conn):
     return Response("200 OK", "text/plain", "success")
 
 
-    
 
 
 #handle_http_post() returns an appropriate response for a POST request
