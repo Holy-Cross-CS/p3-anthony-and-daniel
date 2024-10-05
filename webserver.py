@@ -76,6 +76,98 @@ class Statistics:
         self.avg_time = 0 # average time spent handling requests
 stats = Statistics()
 
+# Some Global Variables
+topic_list_version_number = 0
+AllTopics = []
+lock = threading.Condition()
+
+#Creates a class for the messages for the whispher App
+class Topic:
+    def __init__(self, topic):
+        
+        # Adds name to topic
+        self.name = topic
+        # A topic list version for a certain topic
+        self.topicListVersionNumber = 0
+        # Count of how many messages have mentioned that topic.
+        self.msgCount = 0
+        # A count of how many "likes" that topic has received. 
+        self.numLikes = 0
+        # This list holds all messages ever menetioned for the topic
+        self.allMessages = []
+
+        
+    # the add_message function adds message to a topic
+    def add_message(self, message):
+        self.allMessages.append(message)
+        self.msgCount += 1    
+    def add_likes(self, like=1):
+        self.numLikes += like
+    def add_msgCount(self):
+        self.msgCount += 1
+        
+    # Funtions below just return basic information about a topic like likes, msgCount, and version    
+    def get_likes(self):
+        return self.numLikes
+    def get_count(self):
+        return self.msgCount
+    def get_version(self):
+        return self.topicListVersionNumber
+    def get_allMsgs(self):
+        return self.allMessages
+    def get_name(self):
+        return self.name
+    
+    def __str__(self):
+        # Defines the string representation of the Topic instance.
+        return (f"Topic(name='{self.name}', version={self.topicListVersionNumber}, "
+                f"messages={self.msgCount}, likes={self.numLikes})")
+
+    def __repr__(self):
+        #Defines the official string representation of the Topic instance.
+        return self.__str__()
+        
+        
+# Some test cases for topic class
+test = "Can't wait for Spain this spring!"
+study_abroad = Topic("StudyAbroad")
+study_abroad.add_message(test)
+study_abroad.add_likes()
+
+# Append the topic to the AllTopics list
+AllTopics.append(study_abroad)
+
+# Retrieve and print topic information
+print("StudyAbroad Topic Information:")
+print("Version Number:", study_abroad.get_version())   # Expected: 0
+print("Number of Likes:", study_abroad.get_likes())    # Expected: 1
+print("Message Count:", study_abroad.get_count())      # Expected: 1
+print("All Messages:", study_abroad.get_allMsgs())    # Expected: ["Can't wait for Spain this spring!"]
+
+# Print the Topic object directly (uses __str__)
+print("\nPrinting the Topic object directly:")
+print(AllTopics[0])  # Expected: Topic(name='StudyAbroad', version=0, messages=1, likes=1)  
+        
+# Some test cases for topic class
+test1 = "Not happy for PL this Spring!"
+compSi = Topic("PL")
+compSi.add_message(test1)
+for i in range(0, 10):
+    compSi.add_likes()
+
+# Append the topic to the AllTopics list
+AllTopics.append(compSi)
+
+# Retrieve and print topic information
+print("compSi Topic Information:")
+print("Version Number:", compSi.get_version())   # Expected: 0
+print("Number of Likes:", compSi.get_likes())    # Expected: 1
+print("Message Count:", compSi.get_count())      # Expected: 1
+print("All Messages:", compSi.get_allMsgs())    # Expected: ["Can't wait for Spain this spring!"]
+
+# Print the Topic object directly (uses __str__)
+print("\nPrinting the Topic object directly:")
+print(AllTopics[1])  # Expected: Topic(name='StudyAbroad', version=0, messages=1, likes=1)  
 
 # Request objects are used to hold information associated with a single HTTP
 # request from a client.
@@ -417,11 +509,13 @@ def handle_one_http_request(conn):
     # Finally, look at the method and path to decide what to do.
     if req.method == "GET":
         resp = handle_http_get(req, conn)
-    elif req.method == "POST" or req.method == "PUT":
+    elif req.method == "POST":
+        resp = handle_http_post(req, conn)
+    elif req.method == "PUT":
         log("HTTP method '%s' is not yet supported by this server" % (req.method))
         resp = Response("405 METHOD NOT ALLOWED",
                 "text/plain",
-                "PUT and POST methods not yet supported")
+                "PUT methods not yet supported")
     else:
         log("HTTP method '%s' is not recognized by this server" % (req.method))
         resp = Response("405 METHOD NOT ALLOWED",
@@ -520,6 +614,21 @@ def send_http_response(conn, resp):
         log("\n====BEGIN BODY====\n" + make_printable(body) + "=====END BODY====")
         conn.sock.sendall(body)
 
+# handle_http_get_topics() returns a response for GET /whisper/topics?version=0
+def handle_http_get_topics(conn, versionNum):
+    print("I AM HERE NOW!!!!!!!!!!") #Error checking
+    log("Handling http get status request")
+    
+    # Implements a lock feature to protect topic List version and allTopics variable 
+    while versionNum != "0":
+        pass
+    
+    with lock:
+        msg = f"{topic_list_version_number}\n"
+        for topic in AllTopics:
+            msg += f"{topic.get_count()} {topic.get_likes()} {topic.get_name()}\n"
+        return Response("200 OK", "text/plain", msg)
+    
 
 # handle_http_get_status() returns a response for GET /status
 def handle_http_get_status(conn):
@@ -756,6 +865,47 @@ def handle_http_get_file(url_path):
         log("File was not found: " + file_path)
         return Response("404 NOT FOUND", "text/plain", "No such file: " + url_path)
 
+def handle_http_post_message(req, conn):
+    log("Handling http post message request")
+    
+    # partitions message and topics (e.g. #ABC)
+    split1 = req.body.split("\n") # Output: ['tags... ABC XYZ', "message... Some #ABC random #XYZ stuff?", '']
+    split2 = split1[0].split("... ") # Output: ['tags', 'ABC XYZ']
+    tagsInMsg = split2[1]. split(" ") #Output: ['ABC', 'XYZ']
+    
+    print(split1)
+    print(split2)
+    print(tagsInMsg)
+    print(req.path)
+    
+    ## Some Global Variables
+    # topic_list_version_number = 0
+    # AllTopics = []
+    # lock = threading.Condition()
+    with lock:
+        for tag in tagsInMsg:
+            tag = Topic(tag)
+            if tag not in AllTopics: 
+                AllTopics.append(tag)
+                tag.add_message(split1[1])
+                tag.add_msgCount()
+                tag.add_likes()
+            else:
+                tag.add_message(split1[1])
+                tag.add_msgCount()
+    
+    print(AllTopics)
+    return Response("200 OK", "text/plain", "success")
+
+
+    
+
+
+#handle_http_post() returns an appropriate response for a POST request
+def handle_http_post(req, conn):
+    if req.path == "/whisper/messages":
+        resp = handle_http_post_message(req, conn)
+    return resp
 
 # handle_http_get() returns an appropriate response for a GET request
 def handle_http_get(req, conn):
@@ -764,6 +914,10 @@ def handle_http_get(req, conn):
         resp = handle_http_get_status(conn)
     elif req.path == "/hello":
         resp = handle_http_get_hello(req, conn)
+    elif req.path.startswith("/whisper/topics?version="):
+        versionNum = req.path.split("=")
+        print(versionNum[1])
+        resp = handle_http_get_topics(conn, versionNum[1])
     elif req.path.startswith("/hello?"):
         resp = handle_http_get_hello(req, conn)
     elif req.path == "/quote":
