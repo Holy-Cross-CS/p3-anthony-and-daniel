@@ -100,7 +100,9 @@ class Topic:
     # the add_message function adds message to a topic
     def add_message(self, message):
         self.allMessages.append(message)
-        self.msgCount += 1    
+        self.msgCount += 1
+        print("HERE IS ALL MESSAGES")
+        print(self.allMessages)    
     def add_likes(self, like=1):
         self.numLikes += like
     def add_msgCount(self):
@@ -115,6 +117,8 @@ class Topic:
         return self.topicListVersionNumber
     def get_allMsgs(self):
         return self.allMessages
+    def get_msg(self, num):
+        return self.allMessages[num]
     def get_name(self):
         return self.name
     def print_allMsgs(self):
@@ -884,12 +888,35 @@ def handle_http_get_file(url_path):
 
 # handle_http_get_quote() returns a response for the GET /msgFeed
 def handle_http_get_msgFeed(req, TopicVersionNum):
+    log("Handling http get Message Feed request")
+    print(req.path)
+    
+    split1 = req.path.split("?") # Expected output: ["/whisper/feed/PL", "version=0"]
+    if len(split1) < 2:  # Check if path is valid and properly formatted
+        return Response("400 BAD REQUEST", "text/plain", "Malformed request: Missing parameters.")
+        
+    split2 = split1[0].split("/") # Expected output: ['', 'whisper', 'feed', 'PL']
+    if len(split2) < 4 or not split2[3]: # Check if PATH is properly fromatted
+        return Response("400 BAD REQUEST", "text/plain", "Malformed request: Invalid topic structure.")
+
+    topicTarget = Topic(split2[3])    
     with lock:
-        #Do something that I havent done yet
-        pass
-
-
-
+        # Check if topic exists in AllTopics
+        if topicTarget not in AllTopics:
+            return Response("404 NOT FOUND", "text/plain", f"Topic '{topicTarget.get_name()}' not found.")
+    
+        while topic_list_version_number < int(TopicVersionNum):
+            lock.wait()
+        
+        msg = f"{TopicVersionNum}\n"
+        i = 0
+        for topic in AllTopics:
+            if topic == topicTarget:
+                for i in range(topic.get_count()):
+                    msg += f"- {topic.get_msg(i)}\n"
+                    print(msg)
+            
+    return Response("200 OK", "text/plain", msg)
 
 # handle_http_post_message() handles the POST method for the message
 def handle_http_post_message(req, conn):
@@ -928,6 +955,8 @@ def handle_http_post_message(req, conn):
     print(tagsInMsg)
     print(req.path)
     msg = split1[1].split("... ")
+    print("HERE IS MESSAGE 1")
+    print(msg[1])
     
     with lock:
         for tag in tagsInMsg:  # Iterate through each tag in tagsInMsg
