@@ -785,7 +785,6 @@ def handle_http_get_whoami (req, conn):
     msg += "</body></html>"
     
     return Response("200 OK", "text/html", msg)
-    
 
 # handle_http_get_quote() returns a response for the GET /quote
 def handle_http_get_quote():
@@ -883,6 +882,15 @@ def handle_http_get_file(url_path):
         log("File was not found: " + file_path)
         return Response("404 NOT FOUND", "text/plain", "No such file: " + url_path)
 
+# handle_http_get_quote() returns a response for the GET /msgFeed
+def handle_http_get_msgFeed(req, TopicVersionNum):
+    with lock:
+        #Do something that I havent done yet
+        pass
+
+
+
+
 # handle_http_post_message() handles the POST method for the message
 def handle_http_post_message(req, conn):
     global topic_list_version_number
@@ -964,14 +972,15 @@ def handle_http_like_topic(req, conn):
 
     request_parts = req.path.split('/')  
     liked_topic = request_parts[3]
-
-    for topic in AllTopics:
-        print(type(liked_topic))
-        if topic.get_name() == liked_topic:  # Find the Topic object with the same name
-            topic.add_likes()  # Update the existing topic
-            topic_list_version_number += 1 # Update the varible for versioning
-            lock.notify_all()
-            break  # Exit loop after updating the topic
+    
+    with lock:
+        for topic in AllTopics:
+            print(type(liked_topic))
+            if topic.get_name() == liked_topic:  # Find the Topic object with the same name
+                topic.add_likes()  # Update the existing topic
+                topic_list_version_number += 1 # Update the varible for versioning
+                lock.notify_all()
+                break  # Exit loop after updating the topic
 
     return Response("200 OK", "text/plain", "success")
 
@@ -994,6 +1003,9 @@ def handle_http_get(req, conn):
         versionNum = req.path.split("=")
         print(versionNum[1])
         resp = handle_http_get_topics(conn, versionNum[1])
+    elif req.path.startswith("/whisper/feed/"):
+        TopicVersionNum = req.path.split("=")
+        resp = handle_http_get_msgFeed(req, TopicVersionNum[1])    
     elif req.path.startswith("/hello?"):
         resp = handle_http_get_hello(req, conn)
     elif req.path == "/quote":
