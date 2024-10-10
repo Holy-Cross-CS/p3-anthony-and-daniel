@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 
-# Author: K. Walsh <kwalsh@cs.holycross.edu>
-# Date: 15 January 2015
+# Author: K. Walsh, D. Chavez, A. Petrosino <kwalsh@cs.holycross.edu>
+# Date: 10 October 2024
 # Updated: 17 September 2020 - update to python3, add classes
 # Updated: 15 September 2022 - bug fixes
 
 # A simple web server from scratch in Python. Run it like this:
 #   python3 webserver.py  localhost  8888
 # or:
-#   ./webserver.py  localhost  8888
+#   python3 ./webserver.py  localhost  8888
 #
 # The two parameters are the hostname of the server, and the port number to
 # listen on. An optional third parameter specifies a the server root directory.
@@ -635,13 +635,10 @@ def send_http_response(conn, resp):
 
 # handle_http_get_topics() returns a response for GET /whisper/topics?version=0
 def handle_http_get_topics(conn, versionNum):
-    print("I AM HERE NOW!!!!!!!!!!") #Error checking
+    # print("I AM HERE NOW!!!!!!!!!!") #Error checking
     log("Handling http get status request")
     
-    # Implements a lock feature to protect topic List version and allTopics variable    
-    # while versionNum != "0":
-    #     pass
-    
+    # Implements a lock feature to protect topic List version and allTopics variable        
     with lock:
         while topic_list_version_number < int(versionNum):
             lock.wait()
@@ -889,7 +886,7 @@ def handle_http_get_file(url_path):
 # handle_http_get_quote() returns a response for the GET /msgFeed
 def handle_http_get_msgFeed(req, TopicVersionNum):
     log("Handling http get Message Feed request")
-    print(req.path)
+    # print(req.path)
     
     split1 = req.path.split("?") # Expected output: ["/whisper/feed/PL", "version=0"]
     if len(split1) < 2:  # Check if path is valid and properly formatted
@@ -923,7 +920,7 @@ def handle_http_post_message(req, conn):
     global topic_list_version_number
     
     log("Handling http post message request")
-    print(req.body)
+    # print(req.body)
     
     try:
         split1 = req.body.split("\n")  # Expected: ['tags... ABC XYZ', 'message... Some #ABC random #XYZ stuff?', '']
@@ -936,7 +933,7 @@ def handle_http_post_message(req, conn):
         
         tagsInMsg = split2[1].split(" ")  # Expected: ['ABC', 'XYZ']
         message_text = split1[1].strip()  # Strips all whitespace from "message..." Used for error checking
-        print(message_text)
+        # print(message_text)
 
     except Exception as e:
         log(f"Error parsing the request body: {e}")
@@ -950,13 +947,13 @@ def handle_http_post_message(req, conn):
         log("No tags provided; using default tag '#whatever'.")
         
     
-    print(split1)
-    print(split2)
-    print(tagsInMsg)
-    print(req.path)
+    # print(split1)
+    # print(split2)
+    # print(tagsInMsg)
+    # print(req.path)
     msg = split1[1].split("... ")
-    print("HERE IS MESSAGE 1")
-    print(msg[1])
+    # print("HERE IS MESSAGE 1")
+    # print(msg[1])
     
     with lock:
         for tag in tagsInMsg:  # Iterate through each tag in tagsInMsg
@@ -976,10 +973,10 @@ def handle_http_post_message(req, conn):
                         lock.notify_all()
                         break  # Exit loop after updating the topic
     
-        print(AllTopics)
+        #print(AllTopics)
         for topic in AllTopics:
             if topic.get_name() == "whatever":
-                print(topic)
+                #print(topic)
                 topic.print_allMsgs()
                 
         return Response("200 OK", "text/plain", "success")
@@ -1004,7 +1001,7 @@ def handle_http_like_topic(req, conn):
     
     with lock:
         for topic in AllTopics:
-            print(type(liked_topic))
+            # print(type(liked_topic))
             if topic.get_name() == liked_topic:  # Find the Topic object with the same name
                 topic.add_likes()  # Update the existing topic
                 topic_list_version_number += 1 # Update the varible for versioning
@@ -1035,7 +1032,7 @@ def handle_http_get(req, conn):
         resp = handle_http_get_hello(req, conn)
     elif req.path.startswith("/whisper/topics?version="):
         versionNum = req.path.split("=")
-        print(versionNum[1])
+        #print(versionNum[1])
         resp = handle_http_get_topics(conn, versionNum[1])
     elif req.path.startswith("/whisper/feed/"):
         TopicVersionNum = req.path.split("=")
