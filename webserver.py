@@ -921,15 +921,11 @@ def handle_http_post_message(req, conn):
             if tag not in AllTopics:
                 AllTopics.append(tag)  # Add new topic if not found
                 tag.add_message(split1[1])  # Add message to the new topic
-                tag.add_msgCount()
-                tag.add_likes()
             else:
                 # Topic already exists and needs to be added
                 for topic in AllTopics:
                     if topic == tag:  # Find the topic
                         topic.add_message(split1[1])  # Update the existing topic
-                        topic.add_msgCount()
-                        topic.add_likes()
                         break  # Exit loop after updating the topic
     
         print(AllTopics)
@@ -940,10 +936,37 @@ def handle_http_post_message(req, conn):
                 
         return Response("200 OK", "text/plain", "success")
 
+# def get_likes(self):
+    #     return self.numLikes
+    # def get_count(self):
+    #     return self.msgCount
+    # def get_version(self):
+    #     return self.topicListVersionNumber
+    # def get_allMsgs(self):
+    #     return self.allMessages
+    # def get_name(self):
+    #     return self.name
+
+def handle_http_like_topic(req, conn):
+    log("Handling http like message request")
+
+    request_parts = req.path.split('/')  
+    liked_topic = request_parts[3]
+
+    for topic in AllTopics:
+        print(type(liked_topic))
+        if topic.get_name() == liked_topic:  # Find the Topic object with the same name
+            topic.add_likes()  # Update the existing topic
+            break  # Exit loop after updating the topic
+
+    return Response("200 OK", "text/plain", "success")
+
 #handle_http_post() returns an appropriate response for a POST request
 def handle_http_post(req, conn):
     if req.path == "/whisper/messages":
         resp = handle_http_post_message(req, conn)
+    elif req.path.startswith("/whisper/like/"):
+        resp = handle_http_like_topic(req, conn)
     return resp
 
 # handle_http_get() returns an appropriate response for a GET request
