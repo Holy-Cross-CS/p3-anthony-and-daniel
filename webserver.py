@@ -117,6 +117,10 @@ class Topic:
         return self.allMessages
     def get_name(self):
         return self.name
+    def print_allMsgs(self):
+        for msg in self.allMessages:
+            print(msg)
+        return
     
     def __str__(self):
         # Defines the string representation of the Topic instance.
@@ -126,6 +130,17 @@ class Topic:
     def __repr__(self):
         #Defines the official string representation of the Topic instance.
         return self.__str__()
+
+    # Implement equality and hash methods to compare Topic objects by name
+    def __eq__(self, other):
+        # Two Topic objects are considered equal if their names are equal
+        if isinstance(other, Topic):
+            return self.name == other.name
+        return False
+
+    def __hash__(self):
+        # Use the topic's name as the unique identifier for hashing
+        return hash(self.name)
         
         
 # Some test cases for topic class
@@ -867,38 +882,63 @@ def handle_http_get_file(url_path):
 
 def handle_http_post_message(req, conn):
     log("Handling http post message request")
+    print(req.body)
     
-    # partitions message and topics (e.g. #ABC)
-    split1 = req.body.split("\n") # Output: ['tags... ABC XYZ', "message... Some #ABC random #XYZ stuff?", '']
-    split2 = split1[0].split("... ") # Output: ['tags', 'ABC XYZ']
-    tagsInMsg = split2[1]. split(" ") #Output: ['ABC', 'XYZ']
+    try:
+        split1 = req.body.split("\n")  # Expected: ['tags... ABC XYZ', 'message... Some #ABC random #XYZ stuff?', '']
+        if len(split1) < 2:
+            return Response("400 BAD REQUEST", "text/plain", "Request body must contain two lines: tags and message.")
+
+        split2 = split1[0].split("... ")  # Expected: ['tags', 'ABC XYZ']
+        if len(split2) < 2:
+            return Response("400 BAD REQUEST", "text/plain", "First line of the request body should be in the format 'tags... tag1 tag2'.")
+        
+        tagsInMsg = split2[1].split(" ")  # Expected: ['ABC', 'XYZ']
+        message_text = split1[1].strip()  # Strips all whitespace from "message..." Used for error checking
+        print(message_text)
+
+    except Exception as e:
+        log(f"Error parsing the request body: {e}")
+        return Response("400 BAD REQUEST", "text/plain", "Error parsing the request body.")
+
+    if message_text == "message...": # Check for empty message
+        return Response("200 OK", "text/plain", "Empty message received. Ignored.")
+
+    if not tagsInMsg or all(tag.strip() == "" for tag in tagsInMsg): # If no tags, add #whatever topic
+        tagsInMsg = ["whatever"]  # Default topic if no tags are provided
+        log("No tags provided; using default tag '#whatever'.")
+        
     
     print(split1)
     print(split2)
     print(tagsInMsg)
     print(req.path)
     
-    ## Some Global Variables
-    # topic_list_version_number = 0
-    # AllTopics = []
-    # lock = threading.Condition()
     with lock:
-        for tag in tagsInMsg:
-            tag = Topic(tag)
-            if tag not in AllTopics: 
-                AllTopics.append(tag)
-                tag.add_message(split1[1])
+        for tag in tagsInMsg:  # Iterate through each tag in tagsInMsg
+            tag = Topic(tag)  # Create a new Topic object for each tag
+            
+            if tag not in AllTopics:
+                AllTopics.append(tag)  # Add new topic if not found
+                tag.add_message(split1[1])  # Add message to the new topic
                 tag.add_msgCount()
                 tag.add_likes()
             else:
-                tag.add_message(split1[1])
-                tag.add_msgCount()
+                # Topic already exists and needs to be added
+                for topic in AllTopics:
+                    if topic == tag:  # Find the topic
+                        topic.add_message(split1[1])  # Update the existing topic
+                        topic.add_msgCount()
+                        topic.add_likes()
+                        break  # Exit loop after updating the topic
     
-    print(AllTopics)
-    return Response("200 OK", "text/plain", "success")
-
-
-
+        print(AllTopics)
+        for topic in AllTopics:
+            if topic.get_name() == "whatever":
+                print(topic)
+                topic.print_allMsgs()
+                
+        return Response("200 OK", "text/plain", "success")
 
 #handle_http_post() returns an appropriate response for a POST request
 def handle_http_post(req, conn):
