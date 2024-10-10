@@ -913,6 +913,7 @@ def handle_http_post_message(req, conn):
     print(split2)
     print(tagsInMsg)
     print(req.path)
+    msg = split1[1].split("... ")
     
     with lock:
         for tag in tagsInMsg:  # Iterate through each tag in tagsInMsg
@@ -920,12 +921,12 @@ def handle_http_post_message(req, conn):
             
             if tag not in AllTopics:
                 AllTopics.append(tag)  # Add new topic if not found
-                tag.add_message(split1[1])  # Add message to the new topic
+                tag.add_message(msg[1])  # Add message to the new topic
             else:
                 # Topic already exists and needs to be added
                 for topic in AllTopics:
                     if topic == tag:  # Find the topic
-                        topic.add_message(split1[1])  # Update the existing topic
+                        topic.add_message(msg[1])  # Update the existing topic
                         break  # Exit loop after updating the topic
     
         print(AllTopics)
