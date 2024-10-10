@@ -634,11 +634,14 @@ def handle_http_get_topics(conn, versionNum):
     print("I AM HERE NOW!!!!!!!!!!") #Error checking
     log("Handling http get status request")
     
-    # Implements a lock feature to protect topic List version and allTopics variable 
-    while versionNum != "0":
-        pass
+    # Implements a lock feature to protect topic List version and allTopics variable    
+    # while versionNum != "0":
+    #     pass
     
     with lock:
+        while topic_list_version_number < int(versionNum):
+            lock.wait()
+        
         msg = f"{topic_list_version_number}\n"
         for topic in AllTopics:
             msg += f"{topic.get_count()} {topic.get_likes()} {topic.get_name()}\n"
@@ -880,7 +883,10 @@ def handle_http_get_file(url_path):
         log("File was not found: " + file_path)
         return Response("404 NOT FOUND", "text/plain", "No such file: " + url_path)
 
+# handle_http_post_message() handles the POST method for the message
 def handle_http_post_message(req, conn):
+    global topic_list_version_number
+    
     log("Handling http post message request")
     print(req.body)
     
@@ -922,11 +928,15 @@ def handle_http_post_message(req, conn):
             if tag not in AllTopics:
                 AllTopics.append(tag)  # Add new topic if not found
                 tag.add_message(msg[1])  # Add message to the new topic
+                topic_list_version_number += 1 # Increment that variable each time a new topic is created, Used for Versioning
+                lock.notify_all() 
             else:
                 # Topic already exists and needs to be added
                 for topic in AllTopics:
                     if topic == tag:  # Find the topic
                         topic.add_message(msg[1])  # Update the existing topic
+                        topic_list_version_number += 1 # Increment the variable for versioning
+                        lock.notify_all()
                         break  # Exit loop after updating the topic
     
         print(AllTopics)
@@ -949,6 +959,7 @@ def handle_http_post_message(req, conn):
     #     return self.name
 
 def handle_http_like_topic(req, conn):
+    global topic_list_version_number
     log("Handling http like message request")
 
     request_parts = req.path.split('/')  
@@ -958,6 +969,8 @@ def handle_http_like_topic(req, conn):
         print(type(liked_topic))
         if topic.get_name() == liked_topic:  # Find the Topic object with the same name
             topic.add_likes()  # Update the existing topic
+            topic_list_version_number += 1 # Update the varible for versioning
+            lock.notify_all()
             break  # Exit loop after updating the topic
 
     return Response("200 OK", "text/plain", "success")
