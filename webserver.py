@@ -908,7 +908,7 @@ def handle_http_get_msgFeed(req, TopicVersionNum):
         while topic_list_version_number < int(TopicVersionNum):
             lock.wait()
         
-        msg = f"{TopicVersionNum}\n"
+        msg = f"{topic_list_version_number}\n"
         i = 0
         for topic in AllTopics:
             if topic == topicTarget:
