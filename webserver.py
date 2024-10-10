@@ -1011,7 +1011,6 @@ def handle_http_like_topic(req, conn):
         # Sort the message topics by like count
         for topic in AllTopics: 
             topic_like_count = topic.get_likes()
-            if 
 
     return Response("200 OK", "text/plain", "success")
 
