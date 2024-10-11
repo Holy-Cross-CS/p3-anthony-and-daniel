@@ -34,4 +34,4 @@ Tasks:
 
 Collaboration:
 - We went to office hours a few times for help get versioning and some other features working
-- We used chat-GPT a couple times for syntax with python, sometimes giving it sudo code. Examples included how to propperly use the parse, split and sort features
+- We used chat-GPT a couple times for syntax with python, sometimes giving it sudo code. Examples included how to propperly use the parse, split and sort features, as well as how to make loops happen in one line
