@@ -1009,7 +1009,7 @@ def handle_http_like_topic(req, conn):
 
         # Sort the message topics by like count
         AllTopics.sort(key=lambda topic: topic.get_likes(), reverse=True)
-    
+
     return Response("200 OK", "text/plain", "success")
 
 #handle_http_post() returns an appropriate response for a POST request
