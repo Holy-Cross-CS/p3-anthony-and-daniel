@@ -171,8 +171,7 @@ print(AllTopics[0])  # Expected: Topic(name='StudyAbroad', version=0, messages=1
 test1 = "Not happy for PL this Spring!"
 compSi = Topic("PL")
 compSi.add_message(test1)
-for i in range(0, 10):
-    compSi.add_likes()
+compSi.add_likes()
 
 # Append the topic to the AllTopics list
 AllTopics.append(compSi)
@@ -1009,10 +1008,8 @@ def handle_http_like_topic(req, conn):
                 break  # Exit loop after updating the topic
 
         # Sort the message topics by like count
-        for topic in AllTopics: 
-            topic_like_count = topic.get_likes()
-            if 
-
+        AllTopics.sort(key=lambda topic: topic.get_likes(), reverse=True)
+    
     return Response("200 OK", "text/plain", "success")
 
 #handle_http_post() returns an appropriate response for a POST request
