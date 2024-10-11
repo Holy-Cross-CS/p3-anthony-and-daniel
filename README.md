@@ -23,8 +23,8 @@ Tasks:
    - [x] return appropriate errors if topic is not found or other errors
 - [x] handle POST for liking a topic
    - [x] return appropriate errors if topic is not found or other errors
-- [ ] reach goal: topics are sorted by some criteria
-- [ ] reach goal: limit each topic to only the most recent messages
+- [x] reach goal: topics are sorted by some criteria
+- [x] reach goal: limit each topic to only the most recent messages
 - [ ] reach goal: implement downvoting/removal of messages
 - [x] reach goal: implement other features, e.g. using cookies, etc.
 - [x] project still does not use HTTP related python libraries or modules

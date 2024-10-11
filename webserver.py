@@ -103,6 +103,11 @@ class Topic:
         self.msgCount += 1
         print("HERE IS ALL MESSAGES")
         print(self.allMessages)    
+    def remove_message(self, message):
+        self.allMessages.remove(message)
+        self.msgCount -= 1
+        print("HERE IS ALL MESSAGES")
+        print(self.allMessages)    
     def add_likes(self, like=1):
         self.numLikes += like
     def add_msgCount(self):
@@ -634,7 +639,6 @@ def send_http_response(conn, resp):
 
 # handle_http_get_topics() returns a response for GET /whisper/topics?version=0
 def handle_http_get_topics(conn, versionNum):
-    # print("I AM HERE NOW!!!!!!!!!!") #Error checking
     log("Handling http get status request")
     
     # Implements a lock feature to protect topic List version and allTopics variable        
@@ -885,7 +889,6 @@ def handle_http_get_file(url_path):
 # handle_http_get_quote() returns a response for the GET /msgFeed
 def handle_http_get_msgFeed(req, TopicVersionNum):
     log("Handling http get Message Feed request")
-    # print(req.path)
     
     split1 = req.path.split("?") # Expected output: ["/whisper/feed/PL", "version=0"]
     if len(split1) < 2:  # Check if path is valid and properly formatted
@@ -919,7 +922,6 @@ def handle_http_post_message(req, conn):
     global topic_list_version_number
     
     log("Handling http post message request")
-    # print(req.body)
     
     try:
         split1 = req.body.split("\n")  # Expected: ['tags... ABC XYZ', 'message... Some #ABC random #XYZ stuff?', '']
@@ -945,14 +947,7 @@ def handle_http_post_message(req, conn):
         tagsInMsg = ["whatever"]  # Default topic if no tags are provided
         log("No tags provided; using default tag '#whatever'.")
         
-    
-    # print(split1)
-    # print(split2)
-    # print(tagsInMsg)
-    # print(req.path)
     msg = split1[1].split("... ")
-    # print("HERE IS MESSAGE 1")
-    # print(msg[1])
     
     with lock:
         for tag in tagsInMsg:  # Iterate through each tag in tagsInMsg
@@ -967,29 +962,23 @@ def handle_http_post_message(req, conn):
                 # Topic already exists and needs to be added
                 for topic in AllTopics:
                     if topic == tag:  # Find the topic
-                        topic.add_message(msg[1])  # Update the existing topic
-                        topic_list_version_number += 1 # Increment the variable for versioning
-                        lock.notify_all()
-                        break  # Exit loop after updating the topic
+                        if topic.get_count() < 10:
+                            topic.add_message(msg[1])  # Update the existing topic
+                            topic_list_version_number += 1 # Increment the variable for versioning
+                            lock.notify_all()
+                            break  # Exit loop after updating the topic
+                        elif topic.get_count() == 10:
+                            topic.remove_message(topic.get_msg(0))
+                            topic.add_message(msg[1])  # Update the existing topic
+                            topic_list_version_number += 1 # Increment the variable for versioning
+                            lock.notify_all()
+                            break  # Exit loop after updating the topic
     
-        #print(AllTopics)
         for topic in AllTopics:
             if topic.get_name() == "whatever":
-                #print(topic)
                 topic.print_allMsgs()
                 
         return Response("200 OK", "text/plain", "success")
-
-# def get_likes(self):
-    #     return self.numLikes
-    # def get_count(self):
-    #     return self.msgCount
-    # def get_version(self):
-    #     return self.topicListVersionNumber
-    # def get_allMsgs(self):
-    #     return self.allMessages
-    # def get_name(self):
-    #     return self.name
 
 def handle_http_like_topic(req, conn):
     global topic_list_version_number
@@ -1000,7 +989,6 @@ def handle_http_like_topic(req, conn):
     
     with lock:
         for topic in AllTopics:
-            # print(type(liked_topic))
             if topic.get_name() == liked_topic:  # Find the Topic object with the same name
                 topic.add_likes()  # Update the existing topic
                 topic_list_version_number += 1 # Update the varible for versioning
@@ -1029,7 +1017,6 @@ def handle_http_get(req, conn):
         resp = handle_http_get_hello(req, conn)
     elif req.path.startswith("/whisper/topics?version="):
         versionNum = req.path.split("=")
-        #print(versionNum[1])
         resp = handle_http_get_topics(conn, versionNum[1])
     elif req.path.startswith("/whisper/feed/"):
         TopicVersionNum = req.path.split("=")
