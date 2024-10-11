@@ -33,5 +33,5 @@ Tasks:
 - [x] Update README.md to describe final state of project, collaboration, etc.
 
 Collaboration:
-- We went to office hours a few times to talk about versioning and some other features working
-- We used chat-GPT a couple times for syntax with python. Examples included how to propperly use the parse, split and sort features
+- We went to office hours a few times for help get versioning and some other features working
+- We used chat-GPT a couple times for syntax with python, sometimes giving it sudo code. Examples included how to propperly use the parse, split and sort features
